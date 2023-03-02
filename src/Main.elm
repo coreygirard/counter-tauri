@@ -1,37 +1,55 @@
-module Main exposing(main)
+module Main exposing (main)
 
 import Browser
-import Html exposing (Html, span, button, div, text)
-import Html.Attributes as HA
+import Html exposing (Html, button, div, span, text)
+import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
 
+
 main =
-  Browser.sandbox { init = 0, update = update, view = view }
+    Browser.sandbox { init = { n = 0 }, update = update, view = view }
 
-type Msg = Increment | Decrement
 
+type alias Model =
+    { n : Int }
+
+
+type Msg
+    = Increment
+    | Decrement
+
+
+update : Msg -> Model -> Model
 update msg model =
-  case msg of
-    Increment ->
-      model + 1
+    case msg of
+        Increment ->
+            { model | n = model.n + 1 }
 
-    Decrement ->
-      model - 1
+        Decrement ->
+            { model | n = model.n - 1 }
 
+
+view : Model -> Html Msg
 view model =
-  div [HA.style "padding" "48px"]
-    [ button (onClick Decrement :: buttonStyle) [ text "-" ]
-    , div displayStyle  [ text (String.fromInt model) ]
-    , button (onClick Increment :: buttonStyle) [ text "+" ]
+    div [ style "padding" "48px" ]
+        [ button (onClick Decrement :: buttonStyle) [ text "-" ]
+        , div displayStyle [ text (String.fromInt model.n) ]
+        , button (onClick Increment :: buttonStyle) [ text "+" ]
+        ]
+
+
+displayStyle : List (Html.Attribute msg)
+displayStyle =
+    [ style "background-color" "#999"
+    , style "width" "80px"
+    , style "color" "#fff"
+    , style "text-align" "center"
     ]
 
 
-displayStyle = [ HA.style "background-color" "#999" 
-               , HA.style "width" "80px"
-               , HA.style "color" "#fff"
-               , HA.style "text-align" "center" ]
-
-
-buttonStyle = [ HA.style "background-color" "#444" 
-               , HA.style "width" "80px"
-               , HA.style "color" "#fff" ]
+buttonStyle : List (Html.Attribute msg)
+buttonStyle =
+    [ style "background-color" "#444"
+    , style "width" "80px"
+    , style "color" "#fff"
+    ]
