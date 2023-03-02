@@ -1,25 +1,58 @@
- 
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8">
   <title>Main</title>
 
-    <title>Tauri Demo</title>
+  <title>Tauri Demo</title>
 
   <script src="./main.js"></script>
 
 </head>
 
 <body>
-    <div id="myapp"></div>
-    <script>
+  <div id="myapp"></div>
+  <script type="module">
+    const invoke = window.__TAURI__.invoke
+
     var app = Elm.Main.init({
       node: document.getElementById('myapp'),
       flags: Date.now()
     });
-    </script>
-  </body>
+
+
+    app.ports.sendMessage.subscribe(data => {
+      app.ports.receiveMessage.send({
+        value: "executing"
+      });
+      invoke('custom_string_to_string', {
+        invokeMessage: 'JS1(' + data + ')'
+      }).then((message) => {
+        app.ports.receiveMessage.send({
+          value: 'JS2(' + message + ')'
+        });
+      });
+    });
+
+
+
+    /*.then((message) =>
+      console.log(message);
+    })*/
+
+    /*
+    invoke('my_custom_command', {
+      invokeMessage: "JS(" + data + ")"
+    }).then((message) =>
+      console.log({
+        value: message
+      });
+    })
+    */
+  </script>
+</body>
 
 </body>
+
 </html>

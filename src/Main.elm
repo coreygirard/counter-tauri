@@ -1,55 +1,79 @@
-module Main exposing (main)
+port module Main exposing (main)
 
-import Browser
+import Browser exposing (Document)
+import Element exposing (column)
+import Element.Input as Input
 import Html exposing (Html, button, div, span, text)
 import Html.Attributes exposing (style)
 import Html.Events exposing (onClick)
+import Json.Decode
+import Json.Encode
 
 
+main : Program () Model Msg
 main =
-    Browser.sandbox { init = { n = 0 }, update = update, view = view }
+    Browser.document
+        { init = \_ -> ( { staging = "", processed = Nothing }, Cmd.none )
+        , subscriptions = \_ -> receiveMessage (Json.Decode.decodeValue valueDecoder >> Received)
+        , update = update
+        , view = view
+        }
+
+
+port sendMessage : String -> Cmd msg
+
+
+port receiveMessage : (Json.Decode.Value -> msg) -> Sub msg
+
+
+valueDecoder : Json.Decode.Decoder String
+valueDecoder =
+    Json.Decode.field "value" Json.Decode.string
 
 
 type alias Model =
-    { n : Int }
+    { staging : String
+    , processed : Maybe String
+    }
 
 
 type Msg
-    = Increment
-    | Decrement
+    = UpdateString String
+    | SendString
+    | Received (Result Json.Decode.Error String)
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Increment ->
-            { model | n = model.n + 1 }
+        UpdateString s ->
+            ( { model | staging = s }, Cmd.none )
 
-        Decrement ->
-            { model | n = model.n - 1 }
+        SendString ->
+            ( model, sendMessage model.staging )
+
+        Received (Ok s) ->
+            ( { model | processed = Just s }, Cmd.none )
+
+        Received (Err err) ->
+            ( { model | processed = Just <| Json.Decode.errorToString err }, Cmd.none )
 
 
-view : Model -> Html Msg
+view : Model -> Document Msg
 view model =
-    div [ style "padding" "48px" ]
-        [ button (onClick Decrement :: buttonStyle) [ text "-" ]
-        , div displayStyle [ text (String.fromInt model.n) ]
-        , button (onClick Increment :: buttonStyle) [ text "+" ]
+    { title = "Blah"
+    , body =
+        [ Element.layout [] <|
+            column
+                []
+                [ Input.text []
+                    { label = Input.labelHidden ""
+                    , onChange = UpdateString
+                    , placeholder = Nothing
+                    , text = model.staging
+                    }
+                , Input.button [] { label = Element.text "Send", onPress = Just SendString }
+                , Element.text <| Maybe.withDefault "[none]" model.processed
+                ]
         ]
-
-
-displayStyle : List (Html.Attribute msg)
-displayStyle =
-    [ style "background-color" "#999"
-    , style "width" "80px"
-    , style "color" "#fff"
-    , style "text-align" "center"
-    ]
-
-
-buttonStyle : List (Html.Attribute msg)
-buttonStyle =
-    [ style "background-color" "#444"
-    , style "width" "80px"
-    , style "color" "#fff"
-    ]
+    }
